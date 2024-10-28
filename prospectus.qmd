@@ -1,0 +1,24 @@
+---
+title: "Prospectus"
+author: "Janet Li"
+format: pdf
+---
+
+```{r}
+#| message: false
+library(tidyverse)
+```
+
+# Demographics
+
+```{r}
+MDD <- read_csv("project/MDD_all.csv", show_col_types = FALSE)
+flanker_all <- read_csv("project/compiled-flanker-data.csv", show_col_types = FALSE)
+# remove rows for test runs (i.e., where subject ID starts with 9)
+flanker_all <- flanker_all %>% filter(grepl('^[1-8]', subject_id))
+extra_IDs <- c(3963, 3970, 3981, 3983, 3985, 3989, 4002, 117)
+IDs_all <- c(flanker_all$subject_id, extra_IDs)
+# PARCS: UIC 15, USC 14
+MDD_CARS <- MDD %>% filter(ID %in% IDs_all)
+sum(MDD_CARS$MDDnew)
+```
