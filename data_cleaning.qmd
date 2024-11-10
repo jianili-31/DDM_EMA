@@ -1,5 +1,5 @@
 ---
-title: "Prospectus"
+title: "Data Cleaning"
 author: "Janet Li"
 format: pdf
 ---
@@ -32,18 +32,30 @@ sum(MDD_CARS$MDDnew)
 ## Global Parameters
 
 ```{r}
-study <- "CARS"
-school <- "UIC"
-basefolder <- paste0("../", study, "_", school, "_Examiner")
+study <- "PARC" # CAR or PARC
+school <- "USC"
+if (school == "UIC") {
+  basefolder <- paste0("../Examiner/", study, "_", school, "_Examiner")
+} else {
+  if (study == "CAR") {
+    basefolder <- paste0("../../../", study, " Study/Data/Visit 2 Data")
+  } else {
+    basefolder <- paste0("../../../", study, " Study/Data/Visit 2")
+  }
+}
 ```
 
 ```{r}
+# no data: 
+# CARS UIC: 2959
 IDs <- list.files(basefolder)
-IDs <- IDs[nchar(IDs) < 5]
+IDs <- IDs[nchar(IDs) < 5 & !is.na(as.integer(IDs))]
+IDs <- IDs[as.integer(IDs) < 8000]
 tasks <- c("Flanker", "NBack", "SetShifting")
 flanker <- c()
 nback <- c()
 setshifting <- c()
+no_data <- setNames(data.frame(matrix(ncol = 2, nrow = 0)), c("ID", "task"))
 
 for (id in IDs) {
   print(paste0("Working on ", id))
@@ -52,9 +64,19 @@ for (id in IDs) {
     folder <- paste0(folder, "/", id)
   }
   allfiles <- list.files(folder)
+  if (length(allfiles) == 0) {
+    print(paste0("No data for ", id, ", skipping them."))
+    no_data[nrow(no_data)+1, ] <- c(id, "all")
+    next
+  }
   for (task in tasks) {
     print(task)
     filename <- allfiles[str_detect(allfiles, paste0(task, "_", id))]
+    if (length(filename) == 0) {
+      print(paste0("No ", task, " data for ", id, ", skipping them."))
+      no_data[nrow(no_data)+1, ] <- c(id, task)
+      next
+    }
     data <- read_csv(paste0(folder, "/", filename), show_col_type = FALSE)
     if (task == "Flanker") {
       flanker <- rbind(flanker, data)
@@ -68,7 +90,16 @@ for (id in IDs) {
   }
   print(paste0(id, " finished."))
 }
-# id <- "1903"
-# data <- read_csv("../CARS_UIC_Examiner/1903/Examiner/Flanker_1903_1_02_20_2019_12h_41m.csv", show_col_type=FALSE)
 ```
 
+```{r}
+flanker_filename <- paste0('../Examiner/', study, "_", school, "_flanker_all.csv")
+nback_filename <- paste0('../Examiner/', study, "_", school, "_nback_all.csv")
+setshifting_filename <- paste0('../Examiner/', study, "_", school, "_setshifting_all.csv")
+no_data_filename <- paste0('../Examiner/', study, '_', school, "_nodata.csv")
+
+write_csv(flanker, flanker_filename)
+write_csv(nback, nback_filename)
+write_csv(setshifting, setshifting_filename)
+write_csv(no_data, no_data_filename)
+```
